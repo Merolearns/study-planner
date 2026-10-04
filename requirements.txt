@@ -1,0 +1,3 @@
+pytest>=8.0
+# optional -- only needed for the AI quiz feature (set GEMINI_API_KEY too):
+# google-generativeai>=0.8

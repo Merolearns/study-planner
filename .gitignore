@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# local data
+.study-planner/
+*.db
+
+# editors
+.idea/
+.vscode/
+*.swp
+.DS_Store
