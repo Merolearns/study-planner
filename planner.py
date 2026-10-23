@@ -7,6 +7,7 @@ Subcommands:
     deadline add COURSE "TITLE" DATE
     deadline list                   show all incomplete deadlines
     plan [--hours H] [--start DATE]  print a 7-day schedule
+    plan [--days-off DAYS]           skip weekdays, e.g. "sun" or "sat,sun"
     review add COURSE "TITLE" [--note TEXT]
     review                          show items due for review
     review done ITEM_ID --quality 1-5
@@ -101,6 +102,8 @@ def cmd_plan(conn, args):
     if not courses:
         sys.exit("error: add a course first (course add NAME)")
 
+    days_off = parse_days_off(args.days_off) if args.days_off else None
+
     course_info = []
     for course in courses:
         nearest = conn.execute(
@@ -122,7 +125,8 @@ def cmd_plan(conn, args):
         sys.exit("error: --start must be YYYY-MM-DD")
 
     plan = sched.build_schedule(
-        course_info, hours_per_day=args.hours, start=start, days=7
+        course_info, hours_per_day=args.hours, start=start, days=7,
+        days_off=days_off
     )
     if not plan:
         print("nothing to schedule")
@@ -144,6 +148,34 @@ def cmd_plan(conn, args):
             print(f"\n{current_day}")
         print(f"  {item['minutes']:>3} min  {item['course_name']}")
     print()
+
+
+def parse_days_off(spec):
+    """Parse a --days-off value into a set of weekday numbers (0=Mon..6=Sun).
+
+    Accepts comma-separated day names ("sun", "Sat", "sunday") or numbers
+    ("5,6"). Exits with a usage error on anything it can't understand.
+    """
+    names = {
+        "mon": 0, "monday": 0,
+        "tue": 1, "tues": 1, "tuesday": 1,
+        "wed": 2, "wednesday": 2,
+        "thu": 3, "thur": 3, "thurs": 3, "thursday": 3,
+        "fri": 4, "friday": 4,
+        "sat": 5, "saturday": 5,
+        "sun": 6, "sunday": 6,
+    }
+    days = set()
+    for part in spec.split(","):
+        part = part.strip().lower()
+        if part in names:
+            days.add(names[part])
+        elif part.isdigit() and int(part) in range(7):
+            days.add(int(part))
+        else:
+            sys.exit(f"error: can't understand day '{part}' in --days-off "
+                     f"(use day names like 'sun' or numbers 0-6)")
+    return days
 
 
 def cmd_review_add(conn, args):
@@ -238,6 +270,9 @@ def build_parser():
     p_plan.add_argument("--hours", type=float, default=2.0,
                         help="available study hours per day (default 2)")
     p_plan.add_argument("--start", help="schedule start date YYYY-MM-DD")
+    p_plan.add_argument("--days-off",
+                        help="weekdays to skip, e.g. 'sun' or 'sat,sun' "
+                             "(names or 0-6, comma-separated)")
     p_plan.set_defaults(func=cmd_plan)
 
     # review
