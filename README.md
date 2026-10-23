@@ -28,6 +28,7 @@ python planner.py course list
 python planner.py deadline add "CPSC 483" "midterm" 2026-10-20
 python planner.py deadline list
 python planner.py plan --hours 2.5
+python planner.py plan --hours 2 --days-off sat,sun
 python planner.py review add "CPSC 483" "bayes theorem" --note "P(A|B) = P(B|A)P(A)/P(B)"
 python planner.py review
 python planner.py review done 1 --quality 4
@@ -48,6 +49,8 @@ Nothing fancy — a greedy weighting pass, no optimizer:
    don't starve.
 3. Each day's available minutes are split proportionally by weight, rounded to
    5-minute blocks. Rounding leftovers go to the most urgent course.
+4. `plan --days-off sat,sun` marks weekdays off — they get no study time and
+   are skipped entirely (accepts day names or 0-6 numbers, comma-separated).
 
 It regenerates the full week each time you run `plan`, replacing the previous
 schedule.
