@@ -15,7 +15,6 @@ their weights, rounded to 5-minute blocks. Leftover minutes from rounding
 go to the highest-weight course. Nothing is backtracked or rebalanced --
 for a personal planner this is good enough and easy to reason about.
 
-TODO: let the user mark days off (no studying on Sundays, etc.)
 TODO: carry unfinished minutes forward when a day is missed
 """
 
@@ -72,13 +71,18 @@ def split_day(total_minutes, weights):
     return {cid: mins for cid, mins in allocations.items() if mins > 0}
 
 
-def build_schedule(courses, hours_per_day=2.0, start=None, days=7):
+def build_schedule(courses, hours_per_day=2.0, start=None, days=7,
+                   days_off=None):
     """Build a `days`-long schedule.
 
     courses: list of {'id', 'name', 'nearest_due'}.
+    days_off: optional set of weekday numbers (0=Monday..6=Sunday) that get
+        no study time -- days marked off are skipped entirely, so the plan
+        only covers the remaining days of the window.
     Returns a list of {'day', 'course_id', 'course_name', 'minutes'} dicts.
     """
     start = start or date.today()
+    days_off = set(days_off or ())
     total_minutes = int(hours_per_day * 60)
     weights = course_weights(courses, start)
     id_to_name = {c["id"]: c["name"] for c in courses}
@@ -86,6 +90,8 @@ def build_schedule(courses, hours_per_day=2.0, start=None, days=7):
     plan = []
     for offset in range(days):
         day = start + timedelta(days=offset)
+        if day.weekday() in days_off:
+            continue
         for course_id, minutes in split_day(total_minutes, weights).items():
             plan.append(
                 {
