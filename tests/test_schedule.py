@@ -2,6 +2,7 @@
 
 from datetime import date, timedelta
 
+from planner import parse_days_off
 from schedule import build_schedule, course_weights, split_day
 
 
@@ -67,3 +68,40 @@ def test_schedule_spans_seven_days():
     plan = build_schedule(courses_for_test(), days=7)
     days = {item["day"] for item in plan}
     assert len(days) == 7
+
+
+def test_days_off_are_skipped():
+    # start on a Monday so the window contains exactly one Sunday
+    monday = date(2026, 10, 19)
+    assert monday.weekday() == 0
+    plan = build_schedule(courses_for_test(), start=monday, days=7,
+                          days_off={6})
+    days = {item["day"] for item in plan}
+    assert len(days) == 6
+    for day in days:
+        assert date.fromisoformat(day).weekday() != 6
+
+
+def test_days_off_keep_day_totals():
+    monday = date(2026, 10, 19)
+    plan = build_schedule(courses_for_test(), hours_per_day=2.0,
+                          start=monday, days=7, days_off={5, 6})
+    totals = {}
+    for item in plan:
+        totals[item["day"]] = totals.get(item["day"], 0) + item["minutes"]
+    assert len(totals) == 5
+    assert all(total == 120 for total in totals.values())
+
+
+def test_parse_days_off_accepts_names_and_numbers():
+    assert parse_days_off("sun") == {6}
+    assert parse_days_off("sat,sun") == {5, 6}
+    assert parse_days_off("Sunday") == {6}
+    assert parse_days_off("0,2,4") == {0, 2, 4}
+
+
+def test_parse_days_off_rejects_unknown_days():
+    import pytest
+
+    with pytest.raises(SystemExit):
+        parse_days_off("funday")
