@@ -285,7 +285,7 @@ def build_parser():
     p_radd.set_defaults(func=cmd_review_add)
     p_rdone = review_sub.add_parser("done", help="record a completed review")
     p_rdone.add_argument("item_id", type=int)
-    p_rdone.add_argument("--quality", type=int, required=True,
+    p_rdone.add_argument("--quality", type=int, required=True, choices=range(1, 6),
                          help="how well you remembered it, 1-5")
     p_rdone.set_defaults(func=cmd_review_done)
     # bare `review` with no subcommand lists due items
