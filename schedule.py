@@ -15,7 +15,10 @@ their weights, rounded to 5-minute blocks. Leftover minutes from rounding
 go to the highest-weight course. Nothing is backtracked or rebalanced --
 for a personal planner this is good enough and easy to reason about.
 
-TODO: carry unfinished minutes forward when a day is missed
+Minutes planned for days that have already passed are treated as missed
+and carried forward: pass them as `carryover` ({course_id: minutes}) and
+they are added to the first scheduled day of the new plan, so a skipped
+day doesn't silently vanish from the week.
 """
 
 from datetime import date, timedelta
@@ -72,27 +75,40 @@ def split_day(total_minutes, weights):
 
 
 def build_schedule(courses, hours_per_day=2.0, start=None, days=7,
-                   days_off=None):
+                   days_off=None, carryover=None):
     """Build a `days`-long schedule.
 
     courses: list of {'id', 'name', 'nearest_due'}.
     days_off: optional set of weekday numbers (0=Monday..6=Sunday) that get
         no study time -- days marked off are skipped entirely, so the plan
         only covers the remaining days of the window.
+    carryover: optional {course_id: minutes} of missed minutes from days
+        that already passed. They are added to the first scheduled day
+        (skipping days off), so a missed day rolls forward instead of
+        disappearing. Entries for courses no longer in `courses` are
+        ignored.
     Returns a list of {'day', 'course_id', 'course_name', 'minutes'} dicts.
     """
     start = start or date.today()
     days_off = set(days_off or ())
+    carryover = dict(carryover or {})
     total_minutes = int(hours_per_day * 60)
     weights = course_weights(courses, start)
     id_to_name = {c["id"]: c["name"] for c in courses}
 
     plan = []
+    carried = False
     for offset in range(days):
         day = start + timedelta(days=offset)
         if day.weekday() in days_off:
             continue
-        for course_id, minutes in split_day(total_minutes, weights).items():
+        todays = split_day(total_minutes, weights)
+        if carryover and not carried:
+            for course_id, minutes in carryover.items():
+                if minutes > 0 and course_id in id_to_name:
+                    todays[course_id] = todays.get(course_id, 0) + minutes
+            carried = True
+        for course_id, minutes in todays.items():
             plan.append(
                 {
                     "day": day.isoformat(),

@@ -53,7 +53,9 @@ Nothing fancy — a greedy weighting pass, no optimizer:
    are skipped entirely (accepts day names or 0-6 numbers, comma-separated).
 
 It regenerates the full week each time you run `plan`, replacing the previous
-schedule.
+schedule. Minutes that were planned for days that already passed count as
+missed, not done — they roll forward onto the first day of the new plan
+instead of disappearing.
 
 ## How the review queue works
 

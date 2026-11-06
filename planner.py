@@ -120,13 +120,24 @@ def cmd_plan(conn, args):
         )
 
     try:
-        start = date.fromisoformat(args.start) if args.start else None
+        start = date.fromisoformat(args.start) if args.start else date.today()
     except ValueError:
         sys.exit("error: --start must be YYYY-MM-DD")
 
+    # minutes planned for days that already passed are missed, not done --
+    # roll them onto the first day of the new plan instead of dropping them
+    carryover = {
+        row["course_id"]: row["minutes"]
+        for row in conn.execute(
+            "SELECT course_id, SUM(minutes) AS minutes FROM schedule_items "
+            "WHERE day < ? GROUP BY course_id",
+            (start.isoformat(),),
+        ).fetchall()
+    }
+
     plan = sched.build_schedule(
         course_info, hours_per_day=args.hours, start=start, days=7,
-        days_off=days_off
+        days_off=days_off, carryover=carryover,
     )
     if not plan:
         print("nothing to schedule")

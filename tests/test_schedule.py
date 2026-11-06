@@ -93,6 +93,51 @@ def test_days_off_keep_day_totals():
     assert all(total == 120 for total in totals.values())
 
 
+def test_carryover_lands_on_first_day_only():
+    # 30 missed minutes for course 1 roll onto day 1, not every day
+    monday = date(2026, 10, 19)
+    plan = build_schedule(courses_for_test(), hours_per_day=2.0,
+                          start=monday, days=2, carryover={1: 30})
+    totals = {}
+    for item in plan:
+        totals[item["day"]] = totals.get(item["day"], 0) + item["minutes"]
+    assert totals["2026-10-19"] == 150
+    assert totals["2026-10-20"] == 120
+
+
+def test_carryover_skips_days_off():
+    # first day is off, so the missed minutes land on the next study day
+    monday = date(2026, 10, 19)
+    plan = build_schedule(courses_for_test(), hours_per_day=2.0,
+                          start=monday, days=2, days_off={0},
+                          carryover={1: 30})
+    assert {item["day"] for item in plan} == {"2026-10-20"}
+    by_course = {p["course_id"]: p["minutes"] for p in plan}
+    assert by_course[1] == 60 + 30  # half the day (60) + carried 30
+
+
+def test_carryover_reaches_course_with_no_split():
+    # with a tiny daily budget the low-weight course rounds to zero minutes
+    # and drops out of the split -- carried minutes still give it a slot
+    today = date.today()
+    courses = [
+        {"id": 1, "name": "urgent",
+         "nearest_due": (today + timedelta(days=1)).isoformat()},
+        {"id": 2, "name": "background", "nearest_due": None},
+    ]
+    plan = build_schedule(courses, hours_per_day=1 / 12, days=1,
+                          carryover={2: 20})
+    by_course = {p["course_id"]: p["minutes"] for p in plan}
+    assert by_course[2] == 20
+
+
+def test_carryover_ignores_unknown_courses():
+    plan = build_schedule(courses_for_test(), hours_per_day=2.0, days=1,
+                          carryover={99: 45})
+    assert {p["course_id"] for p in plan} == {1, 2}
+    assert sum(p["minutes"] for p in plan) == 120
+
+
 def test_parse_days_off_accepts_names_and_numbers():
     assert parse_days_off("sun") == {6}
     assert parse_days_off("sat,sun") == {5, 6}
