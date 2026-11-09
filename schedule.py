@@ -50,7 +50,10 @@ def course_weights(courses, today=None):
 
 def split_day(total_minutes, weights):
     """Split one day's minutes across course ids by weight. Returns
-    {course_id: minutes}. Guarantees the sum equals total_minutes."""
+    {course_id: minutes}. Guarantees the sum equals total_minutes. When
+    rounding up overshoots (a small day split across many courses), the
+    excess is taken back from the largest allocations so no course is
+    dropped from the plan."""
     if not weights or total_minutes <= 0:
         return {}
 
@@ -66,9 +69,21 @@ def split_day(total_minutes, weights):
 
     # hand the rounding leftovers to the most urgent course
     leftover = total_minutes - assigned
-    if leftover:
+    if leftover > 0:
         top = max(weights, key=weights.get)
         allocations[top] += leftover
+    elif leftover < 0:
+        # rounding overshot (small day, many courses): take the excess
+        # back from the largest allocations instead of dumping it all on
+        # one course, which used to zero that course out of the plan.
+        # Whole blocks while an allocation is above one block, then
+        # single minutes, so no course ever drops to zero.
+        while leftover < 0:
+            largest = max(allocations, key=allocations.get)
+            step = BLOCK_MINUTES if allocations[largest] > BLOCK_MINUTES else 1
+            take = min(-leftover, step)
+            allocations[largest] -= take
+            leftover += take
 
     # drop zero-minute entries so the plan doesn't show noise
     return {cid: mins for cid, mins in allocations.items() if mins > 0}

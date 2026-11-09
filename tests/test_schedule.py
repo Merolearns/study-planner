@@ -64,6 +64,28 @@ def test_split_day_rounding_keeps_total():
     assert sum(alloc.values()) == 120
 
 
+def test_split_day_overshoot_keeps_every_course():
+    # 20 minutes across 6 equal courses: each rounds up to a 5-minute
+    # block (30 total), so the overshoot used to zero out the top course
+    alloc = split_day(20, {i: 1.0 for i in range(1, 7)})
+    assert sum(alloc.values()) == 20
+    assert len(alloc) == 6
+    assert all(mins > 0 for mins in alloc.values())
+
+
+def test_split_day_overshoot_small_total():
+    alloc = split_day(15, {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0})
+    assert sum(alloc.values()) == 15
+    assert len(alloc) == 4
+
+
+def test_split_day_non_block_total():
+    # total that isn't a multiple of 5 still sums exactly
+    alloc = split_day(23, {1: 1.0, 2: 1.0, 3: 1.0})
+    assert sum(alloc.values()) == 23
+    assert len(alloc) == 3
+
+
 def test_schedule_spans_seven_days():
     plan = build_schedule(courses_for_test(), days=7)
     days = {item["day"] for item in plan}
