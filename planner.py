@@ -37,6 +37,8 @@ def find_course(conn, name):
 
 
 def cmd_course_add(conn, args):
+    if args.hours <= 0:
+        sys.exit("error: --hours must be more than 0")
     try:
         conn.execute(
             "INSERT INTO courses (name, hours_per_week) VALUES (?, ?)",
@@ -101,6 +103,8 @@ def cmd_plan(conn, args):
     courses = conn.execute("SELECT id, name FROM courses").fetchall()
     if not courses:
         sys.exit("error: add a course first (course add NAME)")
+    if args.hours <= 0:
+        sys.exit("error: --hours must be more than 0")
 
     days_off = parse_days_off(args.days_off) if args.days_off else None
 
