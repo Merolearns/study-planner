@@ -18,6 +18,7 @@ STUDY_PLANNER_HOME for a different home dir).
 """
 
 import argparse
+import sqlite3
 import sys
 from datetime import date
 
@@ -45,7 +46,9 @@ def cmd_course_add(conn, args):
             (args.name, args.hours),
         )
         conn.commit()
-    except Exception:
+    except sqlite3.IntegrityError:
+        # name is UNIQUE -- anything else (locked DB, disk full) is a real
+        # failure and should surface as-is, not as "already exists"
         sys.exit(f"error: course '{args.name}' already exists")
     print(f"added course '{args.name}' ({args.hours} hrs/week)")
 

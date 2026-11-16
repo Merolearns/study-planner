@@ -43,6 +43,33 @@ def test_course_add_rejects_non_positive_hours(tmp_path, monkeypatch):
     conn.close()
 
 
+def test_course_add_duplicate_still_reported(tmp_path, monkeypatch):
+    conn = _conn(tmp_path, monkeypatch)
+    parser = build_parser()
+    args = parser.parse_args(["course", "add", "Math"])
+    planner.cmd_course_add(conn, args)
+    with pytest.raises(SystemExit, match="already exists"):
+        planner.cmd_course_add(conn, args)
+    conn.close()
+
+
+def test_course_add_db_failure_is_not_reported_as_duplicate():
+    import sqlite3
+
+    class FailingConn:
+        def execute(self, *args, **kwargs):
+            raise sqlite3.OperationalError("disk I/O error")
+
+        def commit(self):
+            pass
+
+    parser = build_parser()
+    args = parser.parse_args(["course", "add", "Math"])
+    # a real DB failure must surface, not be misreported as "already exists"
+    with pytest.raises(sqlite3.OperationalError):
+        planner.cmd_course_add(FailingConn(), args)
+
+
 def test_plan_rejects_non_positive_hours(tmp_path, monkeypatch):
     conn = _conn(tmp_path, monkeypatch)
     parser = build_parser()
