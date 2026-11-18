@@ -30,7 +30,7 @@ def _conn(tmp_path, monkeypatch):
 def test_course_add_rejects_non_positive_hours(tmp_path, monkeypatch):
     conn = _conn(tmp_path, monkeypatch)
     parser = build_parser()
-    for hours in ("0", "-3"):
+    for hours in ("0", "-3", "nan", "inf"):
         args = parser.parse_args(["course", "add", "Math", "--hours", hours])
         with pytest.raises(SystemExit, match="more than 0"):
             planner.cmd_course_add(conn, args)
@@ -75,7 +75,7 @@ def test_plan_rejects_non_positive_hours(tmp_path, monkeypatch):
     parser = build_parser()
     args = parser.parse_args(["course", "add", "Math"])
     planner.cmd_course_add(conn, args)
-    for hours in ("0", "-2"):
+    for hours in ("0", "-2", "nan", "inf"):
         args = parser.parse_args(["plan", "--hours", hours])
         with pytest.raises(SystemExit, match="more than 0"):
             planner.cmd_plan(conn, args)

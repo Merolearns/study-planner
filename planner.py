@@ -18,6 +18,7 @@ STUDY_PLANNER_HOME for a different home dir).
 """
 
 import argparse
+import math
 import sqlite3
 import sys
 from datetime import date
@@ -38,7 +39,10 @@ def find_course(conn, name):
 
 
 def cmd_course_add(conn, args):
-    if args.hours <= 0:
+    if not math.isfinite(args.hours) or args.hours <= 0:
+        # float("nan") / float("inf") slip past `<= 0` (NaN compares
+        # False to everything), so check finiteness first -- otherwise a
+        # NaN lands in the DB as NULL with no complaint
         sys.exit("error: --hours must be more than 0")
     try:
         conn.execute(
@@ -106,7 +110,8 @@ def cmd_plan(conn, args):
     courses = conn.execute("SELECT id, name FROM courses").fetchall()
     if not courses:
         sys.exit("error: add a course first (course add NAME)")
-    if args.hours <= 0:
+    if not math.isfinite(args.hours) or args.hours <= 0:
+        # same NaN/inf trap as course add: nan <= 0 is False
         sys.exit("error: --hours must be more than 0")
 
     days_off = parse_days_off(args.days_off) if args.days_off else None
