@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}study-planner — quiz{% endblock %}
+{% block content %}
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+{% if status_message %}
+<div class="alert alert-error">{{ status_message }}</div>
+{% endif %}
+
+<div class="card">
+  <h2 class="section-title">Practice quiz</h2>
+  <p class="card-text">Generates 5 short practice questions for a topic,
+    using the Gemini API. The quiz feature is optional — without a key it
+    just says so, and nothing else in the app depends on it.</p>
+  {% if courses %}
+  <form method="post" action="{{ url_for('quiz_page') }}">
+    <div class="form-row">
+      <label>Course
+        <select name="course">
+          {% for c in courses %}
+          <option value="{{ c.name }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Topic
+        <input type="text" name="topic" placeholder="e.g. decision trees" autocomplete="off">
+      </label>
+      <button class="btn btn-primary" type="submit">Generate quiz</button>
+    </div>
+  </form>
+  <p class="io-hint">To enable quizzes: <code>pip install
+    google-generativeai</code> and set the <code>GEMINI_API_KEY</code>
+    environment variable before starting the app.</p>
+  {% else %}
+  <p class="empty">Add a course first — quizzes belong to a course.</p>
+  {% endif %}
+</div>
+
+{% if questions %}
+<div class="card">
+  <h2 class="section-title">Questions</h2>
+  <ol class="question-list">
+    {% for q in questions %}
+    <li>{{ q }}</li>
+    {% endfor %}
+  </ol>
+</div>
+{% endif %}
+
+{% endblock %}

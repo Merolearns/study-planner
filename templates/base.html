@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}study-planner{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1><a href="{{ url_for('index') }}">study-planner</a></h1>
+    <p class="subtitle">My courses, deadlines, and a 7-day study plan weighted
+      by what's due soonest — plus a spaced-repetition review queue. Runs
+      locally on SQLite.</p>
+    <nav>
+      <a href="{{ url_for('index') }}">Dashboard</a>
+      <span class="nav-sep">&middot;</span>
+      <a href="{{ url_for('plan_page') }}">Study plan</a>
+      <span class="nav-sep">&middot;</span>
+      <a href="{{ url_for('review_page') }}">Review queue</a>
+      <span class="nav-sep">&middot;</span>
+      <a href="{{ url_for('quiz_page') }}">Quiz</a>
+    </nav>
+  </header>
+
+  {% block content %}{% endblock %}
+
+  <footer>
+    <p class="muted">study-planner — a personal learning project. The
+      command-line tool (<code>python planner.py ...</code>) still works
+      exactly as before; this web UI is just a friendlier front end over the
+      same database.</p>
+  </footer>
+</div>
+</body>
+</html>

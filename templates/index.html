@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}study-planner — dashboard{% endblock %}
+{% block content %}
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+{% if notice %}
+<div class="alert alert-ok">{{ notice }}</div>
+{% endif %}
+
+{% if courses %}
+<div class="stat-grid">
+  <div class="stat-card">
+    <span class="stat-value">{{ courses | length }}</span>
+    <span class="stat-label">courses</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-value">{{ deadlines | length }}</span>
+    <span class="stat-label">open deadlines</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-value">{{ reviews | length }}</span>
+    <span class="stat-label">reviews due now</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2 class="section-title">Courses</h2>
+  <div class="course-grid">
+    {% for c in courses %}
+    <div class="course-card">
+      <span class="course-name">{{ c.name }}</span>
+      <span class="course-meta">{{ c.hours_per_week }} hrs/week target</span>
+      {% if c.next_title %}
+      <span class="course-meta">next: {{ c.next_title }} — {{ c.next_due }}
+        {% if c.days_until == 0 %}(today)
+        {% elif c.days_until == 1 %}(tomorrow)
+        {% elif c.days_until > 1 %}(in {{ c.days_until }} days)
+        {% else %}({{ -c.days_until }} days overdue){% endif %}
+      </span>
+      {% else %}
+      <span class="course-meta">no upcoming deadlines</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <h2 class="section-title">Upcoming deadlines</h2>
+  {% if deadlines %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>due</th><th>course</th><th>deadline</th><th class="amount">days left</th></tr>
+      </thead>
+      <tbody>
+        {% for d in deadlines %}
+        <tr>
+          <td class="mono">{{ d.due_date }}</td>
+          <td>{{ d.course }}</td>
+          <td>{{ d.title }}</td>
+          <td class="amount">{{ d.days_until }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No open deadlines.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="section-title">Due for review</h2>
+  {% if reviews %}
+  <ul class="review-list">
+    {% for r in reviews %}
+    <li>
+      <strong>{{ r.title }}</strong>
+      <span class="muted"> — {{ r.course }}</span>
+      {% if r.note %}<span class="muted"> ({{ r.note }})</span>{% endif %}
+      <span class="badge">interval {{ r.interval_days }}d</span>
+      <span class="muted small">reviewed {{ r.reviews_done }}x</span>
+    </li>
+    {% endfor %}
+  </ul>
+  <p><a class="btn btn-primary" href="{{ url_for('review_page') }}">Open the review queue</a></p>
+  {% else %}
+  <p class="empty">Nothing due for review — nice.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="section-title">This week's plan</h2>
+  {% if plan_days %}
+  {% for day in plan_days %}
+  <h3 class="sub-title">{{ day.day }} <span class="muted small">— {{ day.total }} min</span></h3>
+  {% for item in day["items"] %}
+  <div class="bar-row">
+    <span class="bar-label">{{ item.course }}</span>
+    <span class="bar-track"><span class="bar-fill" style="width: {{ item.pct }}%; background: {{ item.color }};"></span></span>
+    <span class="bar-mins">{{ item.minutes }} min</span>
+  </div>
+  {% endfor %}
+  {% endfor %}
+  <p><a class="btn btn-ghost" href="{{ url_for('plan_page') }}">Regenerate the plan</a></p>
+  {% else %}
+  <p class="empty">No plan yet — generate one from the study plan page.</p>
+  <p><a class="btn btn-primary" href="{{ url_for('plan_page') }}">Generate a plan</a></p>
+  {% endif %}
+</div>
+{% else %}
+<div class="card">
+  <h2 class="section-title">No courses yet</h2>
+  <p class="card-text">Add your first course below, or load a sample week
+    to see what the planner looks like with real data in it.</p>
+  <form method="post" action="{{ url_for('load_sample') }}">
+    <button class="btn btn-primary" type="submit">Load sample week</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2 class="section-title">Add a course</h2>
+  <form method="post" action="{{ url_for('add_course') }}">
+    <div class="form-row">
+      <label>Course name
+        <input type="text" name="name" placeholder="e.g. CPSC 483" autocomplete="off">
+      </label>
+      <label>Hours per week
+        <input type="text" name="hours" value="5" inputmode="decimal">
+      </label>
+      <button class="btn btn-primary" type="submit">Add course</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2 class="section-title">Add a deadline</h2>
+  {% if courses %}
+  <form method="post" action="{{ url_for('add_deadline') }}">
+    <div class="form-row">
+      <label>Course
+        <select name="course">
+          {% for c in courses %}
+          <option value="{{ c.name }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Title
+        <input type="text" name="title" placeholder="e.g. midterm" autocomplete="off">
+      </label>
+      <label>Due date
+        <input type="date" name="date" value="{{ today }}">
+      </label>
+      <button class="btn btn-primary" type="submit">Add deadline</button>
+    </div>
+  </form>
+  {% else %}
+  <p class="empty">Add a course first — deadlines belong to a course.</p>
+  {% endif %}
+</div>
+
+{% endblock %}

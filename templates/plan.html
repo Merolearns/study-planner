@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}study-planner — study plan{% endblock %}
+{% block content %}
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+{% if generated %}
+<div class="alert alert-ok">Plan generated — the week below replaces the previous one.</div>
+{% endif %}
+
+<div class="card">
+  <h2 class="section-title">Generate a 7-day plan</h2>
+  <p class="card-text">Each day's minutes are split across your courses by
+    urgency — a deadline 2 days out counts about 3.5x more than one 7 days
+    out. Minutes planned for days that already passed roll forward onto the
+    first day of the new plan instead of disappearing.</p>
+  {% if courses %}
+  <form method="post" action="{{ url_for('plan_page') }}">
+    <div class="form-row">
+      <label>Hours per day
+        <input type="text" name="hours" value="2" inputmode="decimal">
+      </label>
+      <label>Start date
+        <input type="date" name="start" value="{{ today }}">
+      </label>
+      <label>Days off
+        <input type="text" name="days_off" placeholder="e.g. sat,sun" autocomplete="off">
+      </label>
+      <button class="btn btn-primary" type="submit">Generate plan</button>
+    </div>
+    <p class="io-hint">Days off takes day names or numbers 0–6 (Monday–Sunday),
+      comma-separated — for example <code>sat,sun</code> or <code>5,6</code>.</p>
+  </form>
+  {% else %}
+  <p class="empty">Add a course first — there is nothing to plan yet.</p>
+  {% endif %}
+</div>
+
+{% if plan_days %}
+<div class="card">
+  <h2 class="section-title">The week</h2>
+  {% for day in plan_days %}
+  <h3 class="sub-title">{{ day.day }} <span class="muted small">— {{ day.total }} min</span></h3>
+  {% for item in day["items"] %}
+  <div class="bar-row">
+    <span class="bar-label">{{ item.course }}</span>
+    <span class="bar-track"><span class="bar-fill" style="width: {{ item.pct }}%; background: {{ item.color }};"></span></span>
+    <span class="bar-mins">{{ item.minutes }} min</span>
+  </div>
+  {% endfor %}
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <p class="empty">No plan saved yet.</p>
+</div>
+{% endif %}
+
+{% endblock %}

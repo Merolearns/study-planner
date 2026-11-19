@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}study-planner — review queue{% endblock %}
+{% block content %}
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="card">
+  <h2 class="section-title">Due for review</h2>
+  <p class="card-text">Spaced repetition on a fixed ladder — 1, 3, 7, 14,
+    30 days. Rate how well you remembered each item: 1–2 drops it back to
+    1 day, 3 keeps it where it is, 4–5 climbs one rung.</p>
+  {% if reviews %}
+  <ul class="review-list">
+    {% for r in reviews %}
+    <li class="review-item">
+      <div>
+        <strong>{{ r.title }}</strong>
+        <span class="muted"> — {{ r.course }}</span>
+        {% if r.note %}<span class="muted"> ({{ r.note }})</span>{% endif %}
+        <br>
+        <span class="muted small">interval {{ r.interval_days }}d &middot;
+          reviewed {{ r.reviews_done }}x &middot; due {{ r.next_review }}</span>
+      </div>
+      <form method="post" action="{{ url_for('review_done', item_id=r.id) }}" class="quality-form">
+        <span class="quality-label">How well did you remember it?</span>
+        {% for q in [1, 2, 3, 4, 5] %}
+        <button class="btn btn-quality" type="submit" name="quality" value="{{ q }}">{{ q }}</button>
+        {% endfor %}
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">Nothing due for review — nice.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="section-title">Add a review item</h2>
+  {% if courses %}
+  <form method="post" action="{{ url_for('review_page') }}">
+    <div class="form-row">
+      <label>Course
+        <select name="course">
+          {% for c in courses %}
+          <option value="{{ c.name }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Title
+        <input type="text" name="title" placeholder="e.g. bayes theorem" autocomplete="off">
+      </label>
+      <label>Note (optional)
+        <input type="text" name="note" placeholder="e.g. P(A|B) = ..." autocomplete="off">
+      </label>
+      <button class="btn btn-primary" type="submit">Add to queue</button>
+    </div>
+  </form>
+  {% else %}
+  <p class="empty">Add a course first — review items belong to a course.</p>
+  {% endif %}
+</div>
+
+{% endblock %}
