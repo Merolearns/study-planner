@@ -20,6 +20,43 @@ The only hard dependency is `pytest` for running the tests. The Gemini quiz
 feature needs the optional `google-generativeai` package plus an API key —
 without both, the `quiz` command just tells you it's not configured.
 
+## Web UI
+
+The same planner, as a web app. It uses the same modules and the same
+database as the CLI — the CLI still works exactly as before.
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+Then open http://127.0.0.1:5000
+
+- **Dashboard** — course cards with hours/week and the next deadline,
+  upcoming deadlines, review items due now, and the current 7-day plan
+  with per-course minute bars. Add courses and deadlines from forms on
+  the same page.
+- **Study plan** — hours per day, start date, and days off (e.g.
+  `sat,sun`); regenerates the week with the same urgency weighting and
+  missed-minutes carryover as `planner.py plan`.
+- **Review queue** — items due now with their note, interval, and review
+  count, plus a 1–5 quality button per item that records the review and
+  moves the item up the ladder.
+- **Quiz** — course + topic form. Without `GEMINI_API_KEY` it says so
+  plainly and generates nothing.
+- **Load sample week** — seeds 3 courses, 3 deadlines, and 3 review items
+  (plus a 7-day plan) — but only when the database has no courses yet.
+
+A real example: loading the sample week on 2026-11-19 seeds CPSC 483
+(6 hrs/week), CPSC 335 (5 hrs/week), and CPSC 351 (4 hrs/week), with
+deadlines "lab report 3" for CPSC 351 due 2026-11-23, "midterm" for
+CPSC 483 due 2026-11-25, and "project 2: sorting" for CPSC 335 due
+2026-11-29. The generated plan (2 hours/day, Nov 19–25) gives each day
+120 minutes, split by urgency: CPSC 351 gets 55 minutes, CPSC 483 gets
+40, and CPSC 335 gets 25 — 840 minutes for the week. The review queue
+starts with "bayes theorem", "dijkstra's algorithm", and "process
+scheduling", all due on day one at a 1-day interval.
+
 ## Usage
 
 ```bash
@@ -90,4 +127,8 @@ python -m pytest
 ```
 
 Covers the scheduling math (urgency weighting, day totals, rounding) and the
-interval logic (ladder climbing, resets, due-date checks).
+interval logic (ladder climbing, resets, due-date checks). `tests/test_web.py`
+covers the web UI through Flask's test client: home rendering, course and
+deadline round-trips, plan generation against the real schedule math,
+review-done advancing the interval, the quiz not-configured message, and bad
+inputs returning an error page instead of a 500.
