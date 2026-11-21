@@ -6,6 +6,7 @@ Subcommands:
     course list                     show courses and upcoming deadlines
     deadline add COURSE "TITLE" DATE
     deadline list                   show all incomplete deadlines
+    deadline done ID                mark a deadline complete
     plan [--hours H] [--start DATE]  print a 7-day schedule
     plan [--days-off DAYS]           skip weekdays, e.g. "sun" or "sat,sun"
     review add COURSE "TITLE" [--note TEXT]
@@ -104,6 +105,19 @@ def cmd_deadline_list(conn, _args):
         return
     for row in rows:
         print(f"{row['id']:>3}  {row['due_date']}  [{row['course']}] {row['title']}")
+
+
+def cmd_deadline_done(conn, args):
+    row = conn.execute(
+        "SELECT id FROM deadlines WHERE id = ?", (args.deadline_id,)
+    ).fetchone()
+    if row is None:
+        sys.exit(f"error: no deadline with id {args.deadline_id}")
+    conn.execute(
+        "UPDATE deadlines SET done = 1 WHERE id = ?", (args.deadline_id,)
+    )
+    conn.commit()
+    print(f"marked deadline {args.deadline_id} done")
 
 
 def cmd_plan(conn, args):
@@ -287,6 +301,9 @@ def build_parser():
     p_dadd.set_defaults(func=cmd_deadline_add)
     p_dlist = deadline_sub.add_parser("list", help="list incomplete deadlines")
     p_dlist.set_defaults(func=cmd_deadline_list)
+    p_ddone = deadline_sub.add_parser("done", help="mark a deadline complete")
+    p_ddone.add_argument("deadline_id", type=int)
+    p_ddone.set_defaults(func=cmd_deadline_done)
 
     # plan
     p_plan = sub.add_parser("plan", help="generate a 7-day study schedule")

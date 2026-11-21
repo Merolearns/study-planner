@@ -35,7 +35,8 @@ Then open http://127.0.0.1:5000
 - **Dashboard** — course cards with hours/week and the next deadline,
   upcoming deadlines, review items due now, and the current 7-day plan
   with per-course minute bars. Add courses and deadlines from forms on
-  the same page.
+  the same page; each deadline row has a Done button that clears it
+  once it's finished.
 - **Study plan** — hours per day, start date, and days off (e.g.
   `sat,sun`); regenerates the week with the same urgency weighting and
   missed-minutes carryover as `planner.py plan`.
@@ -64,6 +65,7 @@ python planner.py course add "CPSC 483" --hours 6
 python planner.py course list
 python planner.py deadline add "CPSC 483" "midterm" 2026-10-20
 python planner.py deadline list
+python planner.py deadline done 3
 python planner.py plan --hours 2.5
 python planner.py plan --hours 2 --days-off sat,sun
 python planner.py review add "CPSC 483" "bayes theorem" --note "P(A|B) = P(B|A)P(A)/P(B)"

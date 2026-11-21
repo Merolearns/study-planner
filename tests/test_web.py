@@ -100,6 +100,34 @@ def test_add_course_and_deadline_round_trip(client):
     assert row["title"] == "lab report 3"
 
 
+def test_deadline_done_removes_it_from_dashboard(client):
+    conn = db.connect()
+    _seed(conn)
+    conn.close()
+    today = date.today()
+    resp = client.post(
+        "/deadlines",
+        data={"course": "CPSC 483", "title": "quiz 1",
+              "date": (today + timedelta(days=1)).isoformat()},
+        follow_redirects=True,
+    )
+    assert "quiz 1" in resp.get_data(as_text=True)
+    conn = db.connect()
+    row = conn.execute(
+        "SELECT id FROM deadlines WHERE title = 'quiz 1'"
+    ).fetchone()
+    conn.close()
+    resp = client.post(f"/deadlines/{row['id']}/done", follow_redirects=True)
+    assert resp.status_code == 200
+    assert "quiz 1" not in resp.get_data(as_text=True)
+    conn = db.connect()
+    done = conn.execute(
+        "SELECT done FROM deadlines WHERE id = ?", (row["id"],)
+    ).fetchone()[0]
+    conn.close()
+    assert done == 1
+
+
 def test_plan_generation_renders_real_schedule_math(client):
     conn = db.connect()
     c483, c335 = _seed(conn)

@@ -308,6 +308,19 @@ def add_deadline():
         conn.close()
 
 
+@app.route("/deadlines/<int:deadline_id>/done", methods=["POST"])
+def deadline_done(deadline_id):
+    conn = db.connect()
+    try:
+        conn.execute(
+            "UPDATE deadlines SET done = 1 WHERE id = ?", (deadline_id,)
+        )
+        conn.commit()
+        return redirect(url_for("index"))
+    finally:
+        conn.close()
+
+
 @app.route("/plan", methods=["GET", "POST"])
 def plan_page():
     conn = db.connect()

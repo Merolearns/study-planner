@@ -53,7 +53,7 @@
   <div class="table-wrap">
     <table>
       <thead>
-        <tr><th>due</th><th>course</th><th>deadline</th><th class="amount">days left</th></tr>
+        <tr><th>due</th><th>course</th><th>deadline</th><th class="amount">days left</th><th></th></tr>
       </thead>
       <tbody>
         {% for d in deadlines %}
@@ -62,6 +62,7 @@
           <td>{{ d.course }}</td>
           <td>{{ d.title }}</td>
           <td class="amount">{{ d.days_until }}</td>
+          <td><form method="post" action="{{ url_for('deadline_done', deadline_id=d.id) }}"><button class="btn btn-ghost" type="submit">Done</button></form></td>
         </tr>
         {% endfor %}
       </tbody>
