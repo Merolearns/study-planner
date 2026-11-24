@@ -83,15 +83,18 @@ def cmd_course_list(conn, _args):
 def cmd_deadline_add(conn, args):
     course = find_course(conn, args.course)
     try:
-        date.fromisoformat(args.date)
+        # store canonical YYYY-MM-DD: fromisoformat also accepts compact
+        # forms like "20261201" on 3.11+, which would break the SQL
+        # date('now') comparison and schedule.days_until's split("-")
+        due = date.fromisoformat(args.date).isoformat()
     except ValueError:
         sys.exit("error: date must be YYYY-MM-DD")
     conn.execute(
         "INSERT INTO deadlines (course_id, title, due_date) VALUES (?, ?, ?)",
-        (course["id"], args.title, args.date),
+        (course["id"], args.title, due),
     )
     conn.commit()
-    print(f"added deadline '{args.title}' for {course['name']} on {args.date}")
+    print(f"added deadline '{args.title}' for {course['name']} on {due}")
 
 
 def cmd_deadline_list(conn, _args):

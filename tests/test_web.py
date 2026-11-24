@@ -100,6 +100,24 @@ def test_add_course_and_deadline_round_trip(client):
     assert row["title"] == "lab report 3"
 
 
+def test_deadline_add_via_web_stores_canonical_date(client):
+    client.post(
+        "/courses", data={"name": "CPSC 351", "hours": "4"},
+        follow_redirects=True,
+    )
+    # compact ISO form must be normalized, same as the CLI
+    resp = client.post(
+        "/deadlines",
+        data={"course": "CPSC 351", "title": "final", "date": "20261201"},
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    conn = db.connect()
+    row = conn.execute("SELECT due_date FROM deadlines").fetchone()
+    conn.close()
+    assert row["due_date"] == "2026-12-01"
+
+
 def test_deadline_done_removes_it_from_dashboard(client):
     conn = db.connect()
     _seed(conn)

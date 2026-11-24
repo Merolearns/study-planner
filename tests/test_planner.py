@@ -70,6 +70,21 @@ def test_course_add_db_failure_is_not_reported_as_duplicate():
         planner.cmd_course_add(FailingConn(), args)
 
 
+def test_deadline_add_stores_canonical_date(tmp_path, monkeypatch):
+    conn = _conn(tmp_path, monkeypatch)
+    parser = build_parser()
+    args = parser.parse_args(["course", "add", "Math"])
+    planner.cmd_course_add(conn, args)
+    # compact ISO form is accepted by fromisoformat on 3.11+ but must be
+    # stored as YYYY-MM-DD, or the SQL date('now') comparison and
+    # schedule.days_until both break on the stored value
+    args = parser.parse_args(["deadline", "add", "Math", "exam", "20261201"])
+    planner.cmd_deadline_add(conn, args)
+    stored = conn.execute("SELECT due_date FROM deadlines").fetchone()[0]
+    assert stored == "2026-12-01"
+    conn.close()
+
+
 def test_plan_rejects_non_positive_hours(tmp_path, monkeypatch):
     conn = _conn(tmp_path, monkeypatch)
     parser = build_parser()

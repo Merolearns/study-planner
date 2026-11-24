@@ -283,7 +283,8 @@ def add_deadline():
                 course = None
             if error is None:
                 try:
-                    date.fromisoformat(due)
+                    # store canonical YYYY-MM-DD (see planner.cmd_deadline_add)
+                    due = date.fromisoformat(due).isoformat()
                 except ValueError:
                     error = "date must be YYYY-MM-DD"
             if error is None:
