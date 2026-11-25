@@ -148,6 +148,11 @@ def generate_plan(conn, hours_per_day, start, days_off):
         course_info, hours_per_day=hours_per_day, start=start, days=7,
         days_off=days_off, carryover=carryover,
     )
+    if not plan:
+        # Nothing to schedule (every day is a day off, or the hours
+        # round to zero minutes): keep the stored plan instead of
+        # wiping it -- the CLI does the same in cmd_plan.
+        return plan
     conn.execute("DELETE FROM schedule_items")
     for item in plan:
         conn.execute(
@@ -346,8 +351,12 @@ def plan_page():
                 except SystemExit as exc:
                     error = str(exc).removeprefix("error: ")
             if error is None:
-                generate_plan(conn, hours, start, days_off)
-                generated = True
+                plan = generate_plan(conn, hours, start, days_off)
+                if plan:
+                    generated = True
+                else:
+                    error = ("nothing to schedule for this week -- "
+                             "check the days off and hours")
         return render_template(
             "plan.html",
             courses=courses,

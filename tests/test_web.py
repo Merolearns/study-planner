@@ -198,6 +198,40 @@ def test_plan_with_days_off_skips_weekend(client):
         assert date(year, month, day_num).weekday() < 5
 
 
+def test_plan_regen_with_all_days_off_keeps_saved_plan(client):
+    conn = db.connect()
+    _seed(conn)
+    conn.close()
+    today = date.today()
+    # first generate a real plan, so there is something to keep
+    resp = client.post(
+        "/plan",
+        data={"hours": "2", "start": today.isoformat(), "days_off": ""},
+    )
+    assert resp.status_code == 200
+    conn = db.connect()
+    before = conn.execute("SELECT COUNT(*) FROM schedule_items").fetchone()[0]
+    conn.close()
+    assert before > 0
+    # regenerate with every weekday off: nothing to schedule
+    resp = client.post(
+        "/plan",
+        data={
+            "hours": "2", "start": today.isoformat(),
+            "days_off": "mon,tue,wed,thu,fri,sat,sun",
+        },
+    )
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "Plan generated" not in html
+    assert "nothing to schedule" in html
+    # the stored plan survives -- the old code deleted it and claimed success
+    conn = db.connect()
+    after = conn.execute("SELECT COUNT(*) FROM schedule_items").fetchone()[0]
+    conn.close()
+    assert after == before
+
+
 def test_review_done_advances_interval(client):
     conn = db.connect()
     _seed(conn)
