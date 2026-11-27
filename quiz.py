@@ -40,10 +40,15 @@ def generate_quiz(topic, course_name):
         genai.configure(api_key=os.environ["GEMINI_API_KEY"])
         model = genai.GenerativeModel(MODEL_NAME)
         response = model.generate_content(prompt)
-    except Exception as exc:  # network, auth, quota -- all degrade the same way
+        # response.text itself raises ValueError when the model returns
+        # no usable text (e.g. a safety-blocked reply), so parse it
+        # inside the guard -- the call succeeding is no guarantee
+        # of a readable reply
+        lines = [line.strip() for line in response.text.splitlines()
+                 if line.strip()]
+    except Exception as exc:  # network, auth, quota, blocked/empty reply
         return None, f"api_error: {exc}"
 
-    lines = [line.strip() for line in response.text.splitlines() if line.strip()]
     return lines[:QUESTION_COUNT], "ok"
 
 
